@@ -1,0 +1,20 @@
+# Perfil de pruebas. La BD la provee el entorno (docker compose local o servicio Postgres en CI).
+# Las credenciales de abajo son SOLO de prueba y se pueden sobreescribir con variables de entorno.
+spring:
+  datasource:
+    url: ${TEST_DB_URL:jdbc:postgresql://localhost:5432/app_test}
+    username: ${TEST_DB_RUNTIME_USER:app_runtime}
+    password: ${TEST_DB_RUNTIME_PASSWORD:runpw}
+  flyway:
+    url: ${TEST_DB_URL:jdbc:postgresql://localhost:5432/app_test}
+    user: ${TEST_DB_MIGRATOR_USER:app_migrator}
+    password: ${TEST_DB_MIGRATOR_PASSWORD:migpw}
+app:
+  security:
+    password:
+      hibp-enabled: false          # sin llamadas de red en pruebas
+    login:
+      ip-limit-per-minute: 1000
+      account-limit-per-minute: 1000
+  crypto:
+    key: ${TEST_CRYPTO_KEY:AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=}   # clave de PRUEBA (no usar fuera de tests)

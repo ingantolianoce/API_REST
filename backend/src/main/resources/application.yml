@@ -1,0 +1,83 @@
+# Configuracion base SEGURA POR DEFECTO. Los secretos llegan SIEMPRE por variables de entorno (sin valores por defecto).
+spring:
+  application:
+    name: app
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/app}
+    username: ${DB_RUNTIME_USER:app_runtime}        # usuario de la app: sin DDL ni DELETE en auditoria
+    password: ${DB_RUNTIME_PASSWORD}
+  flyway:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/app}
+    user: ${DB_MIGRATOR_USER:app_migrator}          # usuario separado para migraciones
+    password: ${DB_MIGRATOR_PASSWORD}
+  session:
+    timeout: 2h                                     # tope; el valor efectivo se fija al iniciar sesion (ver app.security.session)
+    jdbc:
+      initialize-schema: never                      # el esquema lo crea Flyway
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true              # anti mass assignment: campos no declarados => 400
+  mvc:
+    problemdetails:
+      enabled: false
+  main:
+    banner-mode: "off"
+
+server:
+  forward-headers-strategy: native                  # detras de proxy TLS; configurar remoteip.internal-proxies en prod
+  servlet:
+    session:
+      timeout: 2h
+      # La cookie de sesion (__Host-SESSION, Secure, HttpOnly, SameSite=Lax) se define en config/SessionConfig.java
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+    include-exception: false
+    whitelabel:
+      enabled: false
+  tomcat:
+    max-http-form-post-size: 64KB
+    max-swallow-size: 1MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health                             # nada mas expuesto; /actuator/health sin detalles
+  endpoint:
+    health:
+      show-details: never
+
+app:
+  security:
+    secure-cookies: true
+    cors-allowed-origins: []                        # lista blanca explicita; vacio = solo mismo origen
+    max-body-bytes: 1048576
+    login:
+      ip-limit-per-minute: 30
+      account-limit-per-minute: 10
+      max-failed-attempts: 5                        # a partir de aqui: bloqueo temporal con backoff exponencial
+      lock-base-seconds: 30
+      lock-max-seconds: 900
+    password:
+      min-length: 15
+      max-length: 128
+      hibp-enabled: true                            # k-anonimato (Have I Been Pwned)
+      hibp-fail-closed: false                       # ver SECURITY_DECISIONS.md (riesgo aceptado)
+    argon2:                                         # minimos OWASP: m=19456 KiB, t=2, p=1 (medir en el servidor real)
+      memory-kib: 19456
+      iterations: 2
+      parallelism: 1
+      max-concurrent-hashes: 8                      # limita la CPU/RAM usada por hashing (anti-DoS)
+    session:
+      idle-standard: 2h
+      idle-privileged: 20m
+      absolute: 10h
+  crypto:
+    key: ${APP_CRYPTO_KEY}                          # base64 de 32 bytes (openssl rand -base64 32). Sin valor por defecto
+  bootstrap:
+    enabled: false                                  # solo para crear el primer superadmin
+    admin-email: ""
+    tenant-name: ""
+    password-file: ""                               # el password de un solo uso se escribe aqui (modo 0600), nunca en logs

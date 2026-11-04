@@ -1,0 +1,4 @@
+# Archivos que existen SOLO en el repositorio de la plantilla; new-project.sh los elimina del proyecto nuevo.
+.github/workflows/template-review-reminder.yml
+docs/security/REGISTRO_REVISIONES.md
+CHANGELOG.md

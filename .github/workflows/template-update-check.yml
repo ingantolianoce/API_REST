@@ -1,0 +1,44 @@
+# En PROYECTOS derivados: avisa (abre un issue) cuando la plantilla de seguridad publica una version nueva.
+# La plantilla vive en el repositorio indicado en .template/UPSTREAM. Si es privado, crear el secreto
+# TEMPLATE_READ_TOKEN (fine-grained PAT de solo lectura de contenido sobre ese repositorio).
+name: Template update check
+on:
+  schedule:
+    - cron: "17 6 * * 1"           # semanal
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Comparar version local y de la plantilla
+        env:
+          READ_TOKEN: ${{ secrets.TEMPLATE_READ_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          upstream=$(tr -d '[:space:]' < .template/UPSTREAM)
+          local_v=$(tr -d '[:space:]' < .template/VERSION)
+          slug=${upstream#https://github.com/}; slug=${slug%.git}
+          if [ "$slug" = "${GITHUB_REPOSITORY}" ]; then echo "Este es el repositorio de la plantilla: nada que comparar."; exit 0; fi
+          remote_v=$(GH_TOKEN="${READ_TOKEN:-$GH_TOKEN}" gh api "repos/${slug}/contents/.template/VERSION" -H "Accept: application/vnd.github.raw" | tr -d '[:space:]')
+          echo "local=${local_v} plantilla=${remote_v}"
+          newest=$(printf '%s\n%s\n' "$local_v" "$remote_v" | sort -V | tail -1)
+          if [ "$newest" = "$local_v" ]; then echo "Al dia."; exit 0; fi
+          title="Actualizar plantilla de seguridad ${local_v} -> ${remote_v}"
+          if gh issue list --state open --search "\"$title\" in:title" --json number --jq 'length' | grep -qv '^0$'; then
+            echo "Ya existe un issue abierto."; exit 0
+          fi
+          body="La plantilla (\`${slug}\`) publico la version **${remote_v}** (este proyecto usa ${local_v}).
+
+          1. Revise el \`CHANGELOG.md\` de la plantilla: ${upstream}/blob/main/CHANGELOG.md
+          2. Ejecute \`scripts/template-sync.sh\` (actualiza documentos y workflows gestionados) y revise el diff.
+          3. Aplique manualmente los cambios de *Codigo base* indicados en el CHANGELOG (\`git diff --no-index\` contra la plantilla).
+          4. Ejecute los tests, actualice \`SECURITY_DECISIONS.md\` y cierre este issue.
+
+          Plazos sugeridos: actualizaciones marcadas como **CRITICA** en 7 dias; el resto, en el siguiente ciclo trimestral."
+          gh issue create --title "$title" --body "$body" --label seguridad || gh issue create --title "$title" --body "$body"

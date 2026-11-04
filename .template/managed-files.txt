@@ -1,0 +1,19 @@
+# Archivos que PERTENECEN a la plantilla: scripts/template-sync.sh los sobrescribe con la version vigente.
+# No los edite en un proyecto (los cambios se pierden al sincronizar). Para una excepcion, documentela en
+# SECURITY_DECISIONS.md y propongala a la plantilla.
+# Un archivo por linea (rutas, no carpetas). Lineas con # se ignoran.
+docs/security/SEGURIDAD_USUARIOS_ROLES.md
+docs/security/CLAUDE_SEGURIDAD.md
+docs/security/STACK_SPRING_VUE.md
+docs/security/CICLO_DE_ACTUALIZACION.md
+.github/workflows/ci.yml
+.github/workflows/security.yml
+.github/workflows/template-update-check.yml
+.github/dependabot.yml
+.github/pull_request_template.md
+.github/ISSUE_TEMPLATE/revision-seguridad.md
+.gitleaks.toml
+.pre-commit-config.yaml
+db/roles.sql
+scripts/template-sync.sh
+.template/managed-files.txt

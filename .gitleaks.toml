@@ -1,0 +1,11 @@
+# Escaneo de secretos (gitleaks) en pre-commit y CI. Extiende las reglas por defecto.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Valores de PRUEBA que no son secretos reales"
+paths = [
+  '''backend/src/test/''',
+  '''\.env\.example$''',
+  '''docs/''',
+]

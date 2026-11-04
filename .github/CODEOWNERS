@@ -1,0 +1,10 @@
+# Cambios en autenticacion, autorizacion, criptografia, BD y CI requieren revision del responsable de seguridad.
+# Reemplazar @OWNER por el usuario/equipo real al crear el proyecto.
+/backend/src/main/java/**/security/   @OWNER
+/backend/src/main/java/**/auth/       @OWNER
+/backend/src/main/java/**/config/     @OWNER
+/backend/src/main/resources/db/       @OWNER
+/db/                                  @OWNER
+/.github/                             @OWNER
+/docs/security/                       @OWNER
+/SECURITY_DECISIONS.md                @OWNER

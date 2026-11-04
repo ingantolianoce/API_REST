@@ -1,0 +1,31 @@
+# SOLO en el repositorio de la PLANTILLA (se elimina al crear un proyecto con scripts/new-project.sh).
+# Crea cada trimestre el issue de revision con el checklist de .github/ISSUE_TEMPLATE/revision-seguridad.md
+name: Template quarterly review
+on:
+  schedule:
+    - cron: "11 14 5 1,4,7,10 *"   # dia 5 de enero, abril, julio y octubre
+  workflow_dispatch:
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Crear issue de revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          year=$(date -u +%Y); month=$(date -u +%-m); q=$(( (month - 1) / 3 + 1 ))
+          title="Revisión de seguridad ${year}-Q${q}"
+          if gh issue list --state all --search "\"$title\" in:title" --json number --jq 'length' | grep -qv '^0$'; then
+            echo "Ya existe."; exit 0
+          fi
+          # cuerpo = plantilla de issue sin el front matter
+          awk 'BEGIN{c=0} /^---$/{c++; next} c>=2{print}' .github/ISSUE_TEMPLATE/revision-seguridad.md > /tmp/body.md
+          sed -i "s/AAAA-Qn/${year}-Q${q}/" /tmp/body.md
+          gh issue create --title "$title" --body-file /tmp/body.md --label "seguridad,revision-periodica" \
+            || gh issue create --title "$title" --body-file /tmp/body.md

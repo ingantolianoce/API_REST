@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <!-- Logs JSON estructurados, un evento por linea (seccion 20.2). Nunca registrar secretos ni datos personales innecesarios. -->
+  <springProfile name="!dev">
+    <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+        <includeMdcKeyName>request_id</includeMdcKeyName>
+        <includeMdcKeyName>tenant_id</includeMdcKeyName>
+        <includeMdcKeyName>user_id</includeMdcKeyName>
+        <fieldNames>
+          <timestamp>timestamp</timestamp>
+          <message>message</message>
+          <logger>logger</logger>
+          <level>level</level>
+        </fieldNames>
+        <timeZone>UTC</timeZone>
+        <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+          <maxDepthPerThrowable>20</maxDepthPerThrowable>
+        </throwableConverter>
+      </encoder>
+    </appender>
+    <root level="INFO"><appender-ref ref="JSON"/></root>
+  </springProfile>
+  <springProfile name="dev">
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+  </springProfile>
+</configuration>

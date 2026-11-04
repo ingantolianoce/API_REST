@@ -1,0 +1,51 @@
+# Desarrollo local. NO es la configuracion de produccion.
+# Uso:  cp .env.example .env   (completar los valores)  &&  docker compose up -d db
+# Todo el stack (BD + backend + frontend):  docker compose --profile full up --build
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres_admin                       # superusuario: SOLO para inicializar; la app nunca lo usa
+      POSTGRES_PASSWORD: ${DB_ADMIN_PASSWORD:?defina DB_ADMIN_PASSWORD en .env}
+      POSTGRES_DB: ${DB_NAME:-app}
+      DB_MIGRATOR_PASSWORD: ${DB_MIGRATOR_PASSWORD:?defina DB_MIGRATOR_PASSWORD en .env}
+      DB_RUNTIME_PASSWORD: ${DB_RUNTIME_PASSWORD:?defina DB_RUNTIME_PASSWORD en .env}
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - ./db/roles.sql:/roles.sql:ro
+    ports:
+      - "127.0.0.1:5432:5432"                             # solo accesible desde esta maquina; la BD no se expone a la red
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres_admin -d ${DB_NAME:-app}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    profiles: ["full"]
+    build: ./backend
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-app}
+      DB_RUNTIME_PASSWORD: ${DB_RUNTIME_PASSWORD}
+      DB_MIGRATOR_PASSWORD: ${DB_MIGRATOR_PASSWORD}
+      APP_CRYPTO_KEY: ${APP_CRYPTO_KEY:?defina APP_CRYPTO_KEY en .env (openssl rand -base64 32)}
+      APP_BOOTSTRAP_ENABLED: ${APP_BOOTSTRAP_ENABLED:-false}
+      APP_BOOTSTRAP_ADMIN_EMAIL: ${APP_BOOTSTRAP_ADMIN_EMAIL:-}
+      APP_BOOTSTRAP_TENANT_NAME: ${APP_BOOTSTRAP_TENANT_NAME:-}
+      APP_BOOTSTRAP_PASSWORD_FILE: /bootstrap/admin-credentials.txt
+    volumes:
+      - ./.local/bootstrap:/bootstrap                     # aqui aparece la clave de un solo uso del primer superadmin
+    expose: ["8080"]
+
+  frontend:
+    profiles: ["full"]
+    build: ./frontend
+    depends_on: [backend]
+    ports:
+      - "127.0.0.1:8080:8080"
+
+volumes:
+  dbdata:
