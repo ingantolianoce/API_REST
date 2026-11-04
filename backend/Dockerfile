@@ -1,5 +1,5 @@
 # Imagen minima, sin root, sin shell de depuracion. Los secretos llegan por variables de entorno en tiempo de ejecucion.
-FROM maven:3-eclipse-temurin-21 AS build
+FROM maven:3-eclipse-temurin-26 AS build
 WORKDIR /build
 COPY pom.xml .
 RUN mvn -q -B dependency:go-offline
